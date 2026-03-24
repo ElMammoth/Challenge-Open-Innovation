@@ -39,7 +39,7 @@ export default function Header() {
             </svg>
           </div>
           <span className="font-bold text-lg text-gray-900">
-            Loan<span className="text-bpce-600">Coach</span>
+            Loan<span className="text-bpce-600">AI</span>
           </span>
         </a>
 

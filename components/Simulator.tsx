@@ -22,10 +22,14 @@ export default function Simulator() {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages, isLoading]);
 
   const result = useMemo(() => {
@@ -144,7 +148,7 @@ export default function Simulator() {
         {/* Header */}
         <div className="text-center mb-14">
           <p className="text-sm font-semibold text-bpce-600 uppercase tracking-widest mb-3">
-            Simulateur HCSF
+            Loan AI
           </p>
           <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
             Calculez votre capacité d'emprunt en temps réel
@@ -368,7 +372,7 @@ export default function Simulator() {
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">Conseiller IA Loan Coach</p>
-                <p className="text-xs text-gray-500">Propulsé par Groq · Basé sur votre situation réelle</p>
+                <p className="text-xs text-gray-500">Propulsé par Loan AI · Basé sur votre situation réelle</p>
               </div>
               <div className="ml-auto flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -377,7 +381,7 @@ export default function Simulator() {
             </div>
 
             {/* Messages */}
-            <div className="p-5 flex flex-col gap-4 max-h-96 overflow-y-auto bg-gray-50/50">
+            <div ref={messagesContainerRef} className="p-5 flex flex-col gap-4 max-h-96 overflow-y-auto bg-gray-50/50">
               {messages.length === 0 && isLoading && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
@@ -442,7 +446,6 @@ export default function Simulator() {
                   </div>
                 </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}

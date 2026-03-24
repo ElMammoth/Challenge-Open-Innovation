@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 // ── Choisir le provider IA ──────────────────────────────────────────────────
 // "groq"   → Llama 3.3 70B via Groq       (groq.com)
 // "gemini" → Gemini 2.0 Flash via Google  (ai.google.dev)
-const AI_PROVIDER: "groq" | "gemini" = "gemini";
+const AI_PROVIDER: "groq" | "gemini" = "groq";
 // ───────────────────────────────────────────────────────────────────────────
 
 const PROVIDERS = {
@@ -14,7 +14,7 @@ const PROVIDERS = {
   },
   gemini: {
     url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
     apiKey: () => process.env.GEMINI_API_KEY,
   },
 };
@@ -86,8 +86,8 @@ Règles de réponse :
 
   if (!response.ok) {
     const error = await response.text();
-    console.error(`${AI_PROVIDER} API error:`, error);
-    return NextResponse.json({ error: "Erreur lors de la communication avec l'IA." }, { status: 502 });
+    console.error(`[${AI_PROVIDER}] API error ${response.status}:`, error);
+    return NextResponse.json({ error: `Erreur API ${AI_PROVIDER} (${response.status}): ${error}` }, { status: 502 });
   }
 
   const data = await response.json();
