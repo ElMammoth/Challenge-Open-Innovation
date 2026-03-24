@@ -177,32 +177,94 @@ export default function Simulator() {
   const getScoreLabel = (s: number) => s >= 70 ? "Dossier solide" : s >= 50 ? "Dossier perfectible" : "Dossier fragile";
   const getScoreBg = (s: number) => s >= 70 ? "bg-emerald-500" : s >= 50 ? "bg-amber-400" : "bg-red-500";
 
-  /* ── Markdown renderer ── */
+  /* ── Markdown renderer (design cards par section) ── */
+  const sectionIcons: Record<string, { icon: string; gradient: string }> = {
+    "diagnostic": { icon: "🔍", gradient: "from-blue-500 to-indigo-600" },
+    "banque": { icon: "🏦", gradient: "from-amber-500 to-orange-500" },
+    "plan": { icon: "🎯", gradient: "from-emerald-500 to-teal-600" },
+    "stratégie": { icon: "🚀", gradient: "from-bpce-500 to-bpce-800" },
+  };
+
+  function getSectionStyle(title: string) {
+    const lower = title.toLowerCase();
+    if (lower.includes("diagnostic")) return sectionIcons["diagnostic"];
+    if (lower.includes("banque")) return sectionIcons["banque"];
+    if (lower.includes("plan") || lower.includes("action")) return sectionIcons["plan"];
+    if (lower.includes("stratégie") || lower.includes("recommand")) return sectionIcons["stratégie"];
+    return { icon: "📋", gradient: "from-gray-500 to-gray-700" };
+  }
+
   function renderMarkdown(text: string) {
-    return text.split("\n").map((line, i) => {
-      if (line.startsWith("### ")) return <h4 key={i} className="text-base font-bold text-gray-900 mt-5 mb-2">{line.slice(4)}</h4>;
-      if (line.startsWith("## ")) return <h3 key={i} className="text-lg font-bold text-gray-900 mt-6 mb-2">{line.slice(3)}</h3>;
-      if (line.startsWith("# ")) return <h2 key={i} className="text-xl font-extrabold text-gray-900 mt-6 mb-3">{line.slice(2)}</h2>;
-      if (line.match(/^[-*]\s/)) {
-        const content = line.replace(/^[-*]\s*/, "");
-        return (
-          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
-            <span className="text-bpce-600 mt-0.5 shrink-0">&#8226;</span>
-            <span dangerouslySetInnerHTML={{ __html: content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
-          </li>
-        );
+    // Split into sections by ## headers
+    const sections: { title: string; content: string }[] = [];
+    let intro = "";
+    const lines = text.split("\n");
+    let currentSection: { title: string; content: string } | null = null;
+
+    for (const line of lines) {
+      if (line.startsWith("## ")) {
+        if (currentSection) sections.push(currentSection);
+        currentSection = { title: line.slice(3).trim(), content: "" };
+      } else if (currentSection) {
+        currentSection.content += line + "\n";
+      } else {
+        intro += line + "\n";
       }
-      if (line.match(/^\d+\.\s/)) {
-        return (
-          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
-            <span className="text-bpce-600 font-bold mt-0.5 shrink-0">{line.match(/^(\d+)\./)?.[1]}.</span>
-            <span dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\.\s*/, "").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
-          </li>
-        );
-      }
-      if (line.trim() === "") return <div key={i} className="h-2" />;
-      return <p key={i} className="text-sm text-gray-700 leading-relaxed mb-1" dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, "<strong class='text-gray-900'>$1</strong>") }} />;
-    });
+    }
+    if (currentSection) sections.push(currentSection);
+
+    function renderLines(content: string) {
+      return content.split("\n").map((line, i) => {
+        if (line.startsWith("### ")) return <h4 key={i} className="text-sm font-bold text-gray-900 mt-4 mb-2">{line.slice(4)}</h4>;
+        if (line.match(/^[-*]\s/)) {
+          const c = line.replace(/^[-*]\s*/, "");
+          return (
+            <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700 mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-bpce-400 mt-1.5 shrink-0" />
+              <span dangerouslySetInnerHTML={{ __html: c.replace(/\*\*(.*?)\*\*/g, "<strong class='text-gray-900'>$1</strong>") }} />
+            </li>
+          );
+        }
+        if (line.match(/^\d+\.\s/)) {
+          const num = line.match(/^(\d+)\./)?.[1];
+          return (
+            <li key={i} className="flex items-start gap-3 text-sm text-gray-700 mb-3">
+              <span className="w-6 h-6 rounded-full bg-bpce-100 text-bpce-700 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">{num}</span>
+              <span dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\.\s*/, "").replace(/\*\*(.*?)\*\*/g, "<strong class='text-gray-900'>$1</strong>") }} />
+            </li>
+          );
+        }
+        if (line.trim() === "" || line.trim() === "---") return <div key={i} className="h-1" />;
+        return <p key={i} className="text-sm text-gray-700 leading-relaxed mb-1.5" dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, "<strong class='text-gray-900'>$1</strong>") }} />;
+      });
+    }
+
+    return (
+      <div className="space-y-5">
+        {/* Intro text */}
+        {intro.trim() && (
+          <div className="text-sm text-gray-600 leading-relaxed italic border-l-3 border-bpce-300 pl-4 py-1">
+            {renderLines(intro)}
+          </div>
+        )}
+
+        {/* Section cards */}
+        {sections.map((section, i) => {
+          const style = getSectionStyle(section.title);
+          return (
+            <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className={`flex items-center gap-3 px-5 py-3 bg-gradient-to-r ${style.gradient}`}>
+                <span className="text-lg">{style.icon}</span>
+                <h3 className="text-sm font-bold text-white">{section.title}</h3>
+              </div>
+              <div className="px-5 py-4">
+                {renderLines(section.content)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   /* ── UI Components ── */
@@ -571,10 +633,24 @@ export default function Simulator() {
 
                 <div className="p-6">
                   {aiLoading && (
-                    <div className="flex flex-col items-center justify-center py-12 gap-4">
-                      <div className="w-12 h-12 rounded-full border-4 border-bpce-200 border-t-bpce-600 animate-spin" />
-                      <p className="text-sm text-gray-500 font-medium">Notre IA analyse votre dossier complet...</p>
-                      <p className="text-xs text-gray-400">Profil, revenus, charges et projet pris en compte</p>
+                    <div className="flex flex-col items-center justify-center py-16 gap-5">
+                      <div className="relative">
+                        <div className="w-16 h-16 rounded-full border-4 border-bpce-100 border-t-bpce-600 animate-spin" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xl">🧠</span>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-base font-semibold text-gray-800 mb-1">Gemini analyse votre dossier...</p>
+                        <p className="text-sm text-gray-500">Diagnostic, plan d'action et stratégie personnalisée</p>
+                      </div>
+                      <div className="flex gap-3 mt-2">
+                        {["Profil", "Revenus", "Charges", "Projet"].map((label, i) => (
+                          <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-bpce-50 text-bpce-600 border border-bpce-200 animate-pulse" style={{ animationDelay: `${i * 200}ms` }}>
+                            {label}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 

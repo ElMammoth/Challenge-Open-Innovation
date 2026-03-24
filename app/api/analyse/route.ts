@@ -99,7 +99,10 @@ RÈGLES :
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 1500,
+            maxOutputTokens: 8192,
+            thinkingConfig: {
+              thinkingBudget: 1024,
+            },
           },
         }),
       }
@@ -111,8 +114,11 @@ RÈGLES :
     }
 
     const data = await res.json();
-    const content =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ?? "Aucune analyse disponible.";
+    // Gemini 2.5 Flash returns multiple parts: thinking + actual response
+    const parts = data.candidates?.[0]?.content?.parts ?? [];
+    // Get the last text part (the actual response, not the thinking)
+    const textParts = parts.filter((p: { text?: string; thought?: boolean }) => p.text && !p.thought);
+    const content = textParts[textParts.length - 1]?.text ?? parts[parts.length - 1]?.text ?? "Aucune analyse disponible.";
 
     return Response.json({ analyse: content });
   } catch {
