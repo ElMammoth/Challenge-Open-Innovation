@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 // ── Choisir le provider IA ──────────────────────────────────────────────────
 // "groq"   → Llama 3.3 70B via Groq       (groq.com)
 // "gemini" → Gemini 2.0 Flash via Google  (ai.google.dev)
-const AI_PROVIDER: "groq" | "gemini" = "groq";
+const AI_PROVIDER: "groq" | "gemini" = "gemini";
 // ───────────────────────────────────────────────────────────────────────────
 
 const PROVIDERS = {
