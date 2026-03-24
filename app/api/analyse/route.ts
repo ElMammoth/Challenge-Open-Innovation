@@ -33,14 +33,14 @@ REGLES :
   }
 
   try {
-    const res = await fetch("https://api.x.ai/v1/chat/completions", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "grok-3-mini",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: "Tu es un conseiller expert en crédit immobilier français. Tu vulgarises les concepts financiers pour les rendre accessibles à tous." },
           { role: "user", content: prompt },
