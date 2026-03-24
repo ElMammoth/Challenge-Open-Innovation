@@ -1,5 +1,24 @@
 import { NextResponse } from "next/server";
 
+// ── Choisir le provider IA ──────────────────────────────────────────────────
+// "groq"   → Llama 3.3 70B via Groq       (groq.com)
+// "gemini" → Gemini 2.0 Flash via Google  (ai.google.dev)
+const AI_PROVIDER: "groq" | "gemini" = "groq";
+// ───────────────────────────────────────────────────────────────────────────
+
+const PROVIDERS = {
+  groq: {
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    model: "llama-3.3-70b-versatile",
+    apiKey: () => process.env.GROQ_API_KEY,
+  },
+  gemini: {
+    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    model: "gemini-2.0-flash",
+    apiKey: () => process.env.GEMINI_API_KEY,
+  },
+};
+
 interface SimulatorContext {
   revenu: number;
   autresCredits: number;
@@ -18,7 +37,9 @@ interface Message {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.GROQ_API_KEY;
+  const provider = PROVIDERS[AI_PROVIDER];
+  const apiKey = provider.apiKey();
+
   if (!apiKey) {
     return NextResponse.json({ error: "Clé API non configurée." }, { status: 500 });
   }
@@ -50,14 +71,14 @@ Règles de réponse :
 - Tu peux utiliser des emojis avec parcimonie pour rendre la réponse lisible
 - Si l'utilisateur pose une question hors sujet crédit immobilier, ramène-le poliment au sujet`;
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const response = await fetch(provider.url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+      model: provider.model,
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       temperature: 0.7,
     }),
@@ -65,8 +86,8 @@ Règles de réponse :
 
   if (!response.ok) {
     const error = await response.text();
-    console.error("Grok API error:", error);
-    return NextResponse.json({ error: "Erreur lors de la communication avec Grok." }, { status: 502 });
+    console.error(`${AI_PROVIDER} API error:`, error);
+    return NextResponse.json({ error: "Erreur lors de la communication avec l'IA." }, { status: 502 });
   }
 
   const data = await response.json();
