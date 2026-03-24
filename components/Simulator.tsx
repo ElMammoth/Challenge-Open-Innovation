@@ -1,8 +1,13 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 
 function formatEur(n: number) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
+}
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
 }
 
 export default function Simulator() {
@@ -11,7 +16,17 @@ export default function Simulator() {
   const [apport, setApport] = useState(30000);
   const [duree, setDuree] = useState(20);
   const [tauxInteret, setTauxInteret] = useState(3.5);
-  const [showSolutions, setShowSolutions] = useState(false);
+
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   const result = useMemo(() => {
     const tauxMensuel = tauxInteret / 100 / 12;
@@ -32,90 +47,78 @@ export default function Simulator() {
     const score = Math.round(Math.min(100, scoreRaw));
     const isProblematic = tauxEndettementActuel > 35 || score < 45;
 
-    // Solutions personnalisées
-    const creditExcess = Math.max(0, autresCredits - revenu * 0.35);
-    const creditToReduce = Math.ceil(creditExcess / 50) * 50;
-    const revenuNeeded = autresCredits > 0 ? Math.ceil(autresCredits / 0.35 / 100) * 100 : 0;
-    const revenuGap = Math.max(0, revenuNeeded - revenu);
-    const dureeMax25 = duree > 25;
-    const apportIdeal = Math.round(capaciteEmprunt * 0.1 / 1000) * 1000;
+    return { maxMensualite, capaciteEmprunt, budgetTotal, tauxEndettementActuel, hcsfOk, score, margePct, isProblematic };
+  }, [revenu, autresCredits, apport, duree, tauxInteret]);
 
-    const solutions = [];
+  const getSimulatorContext = () => ({
+    revenu,
+    autresCredits,
+    apport,
+    duree,
+    tauxInteret,
+    score: result.score,
+    tauxEndettement: result.tauxEndettementActuel,
+    budgetTotal: result.budgetTotal,
+    capaciteEmprunt: result.capaciteEmprunt,
+  });
 
-    if (autresCredits > revenu * 0.35) {
-      solutions.push({
-        icon: "💳",
-        priority: "haute",
-        title: "Soldez ou rachetez vos crédits en cours",
-        detail: `Vous devez réduire vos mensualités de crédits de ${formatEur(creditToReduce)}/mois pour repasser sous le seuil de 35%. Clôturer un crédit renouvelable ou racheter un crédit auto peut suffire.`,
-        impact: "Impact immédiat",
-        color: "border-red-200 bg-red-50",
-        iconBg: "bg-red-100",
-        badgeColor: "bg-red-100 text-red-700",
-      });
+  const callGrok = async (msgs: Message[]) => {
+    const response = await fetch("/api/grok", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: msgs, simulatorContext: getSimulatorContext() }),
+    });
+    if (!response.ok) throw new Error("Erreur API");
+    const data = await response.json();
+    return data.message as string;
+  };
+
+  const openChat = async () => {
+    if (showChat) {
+      setShowChat(false);
+      return;
     }
-
-    if (revenuGap > 0) {
-      solutions.push({
-        icon: "💰",
-        priority: "haute",
-        title: "Augmentez vos revenus déclarés",
-        detail: `Avec vos crédits actuels (${formatEur(autresCredits)}/mois), il vous faudrait ${formatEur(revenuNeeded)}/mois de revenus nets pour être sous les 35% HCSF. Un co-emprunteur ou des revenus locatifs peuvent être intégrés au dossier.`,
-        impact: `+${formatEur(revenuGap)}/mois nécessaires`,
-        color: "border-orange-200 bg-orange-50",
-        iconBg: "bg-orange-100",
-        badgeColor: "bg-orange-100 text-orange-700",
-      });
-    }
-
-    if (duree < 25 && duree > 0) {
-      const tauxMensuelCalc = tauxInteret / 100 / 12;
-      const nbMois25 = 25 * 12;
-      const maxMens25 = revenu * 0.35 - autresCredits;
-      const capacite25 = maxMens25 > 0
-        ? (maxMens25 * (1 - Math.pow(1 + tauxMensuelCalc, -nbMois25))) / tauxMensuelCalc
-        : 0;
-      const gainCapacite = Math.round((capacite25 - capaciteEmprunt) / 1000) * 1000;
-      if (gainCapacite > 5000) {
-        solutions.push({
-          icon: "📅",
-          priority: "moyenne",
-          title: `Allongez la durée à 25 ans`,
-          detail: `En passant de ${duree} à 25 ans, vous augmentez votre capacité d'emprunt de ${formatEur(gainCapacite)} supplémentaires, sans toucher à vos revenus ni à vos crédits. C'est la solution la plus simple et la plus rapide.`,
-          impact: `+${formatEur(gainCapacite)} de capacité`,
-          color: "border-bpce-200 bg-bpce-50",
-          iconBg: "bg-bpce-100",
-          badgeColor: "bg-bpce-100 text-bpce-700",
-        });
+    setShowChat(true);
+    if (messages.length === 0) {
+      setIsLoading(true);
+      try {
+        const initial: Message[] = [
+          { role: "user", content: "Analyse ma situation et explique-moi comment obtenir mon crédit immobilier. Donne-moi les actions prioritaires." },
+        ];
+        const reply = await callGrok(initial);
+        setMessages([{ role: "assistant", content: reply }]);
+      } catch {
+        setMessages([{ role: "assistant", content: "Bonjour ! Je suis votre conseiller IA Loan Coach. Posez-moi vos questions sur votre dossier de crédit immobilier." }]);
+      } finally {
+        setIsLoading(false);
       }
     }
+  };
 
-    if (apport < apportIdeal && apportIdeal > 0) {
-      solutions.push({
-        icon: "🏦",
-        priority: "moyenne",
-        title: "Augmentez votre apport personnel",
-        detail: `Un apport de ${formatEur(apportIdeal)} (10% du projet) rassure fortement la banque et peut débloquer une dérogation aux normes HCSF. Épargne personnelle, donation familiale ou déblocage de participation sont des sources valides.`,
-        impact: "Améliore fortement le dossier",
-        color: "border-emerald-200 bg-emerald-50",
-        iconBg: "bg-emerald-100",
-        badgeColor: "bg-emerald-100 text-emerald-700",
-      });
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+    const content = inputMessage.trim();
+    const newMessages: Message[] = [...messages, { role: "user", content }];
+    setMessages(newMessages);
+    setInputMessage("");
+    setIsLoading(true);
+    try {
+      const reply = await callGrok(newMessages);
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+    } catch {
+      setMessages(prev => [...prev, { role: "assistant", content: "Une erreur est survenue. Veuillez réessayer." }]);
+    } finally {
+      setIsLoading(false);
+      inputRef.current?.focus();
     }
+  };
 
-    solutions.push({
-      icon: "🤝",
-      priority: "conseil",
-      title: "Ajoutez un co-emprunteur",
-      detail: "Emprunter à deux permet de cumuler les revenus, ce qui peut faire baisser mécaniquement votre taux d'endettement. C'est l'une des solutions les plus efficaces pour les primo-accédants dont le revenu individuel est insuffisant.",
-      impact: "Très efficace",
-      color: "border-gray-200 bg-gray-50",
-      iconBg: "bg-gray-100",
-      badgeColor: "bg-gray-100 text-gray-600",
-    });
-
-    return { maxMensualite, capaciteEmprunt, budgetTotal, tauxEndettementActuel, hcsfOk, score, margePct, isProblematic, solutions };
-  }, [revenu, autresCredits, apport, duree, tauxInteret]);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
   const getScoreColor = (s: number) =>
     s >= 70 ? "text-emerald-600" : s >= 45 ? "text-amber-600" : "text-red-500";
@@ -316,24 +319,25 @@ export default function Simulator() {
               )}
             </div>
 
-            {/* ── BOUTON SOLUTIONS (visible quand dossier problématique) ── */}
+            {/* Bouton IA — visible quand dossier problématique */}
             {result.isProblematic && (
               <button
-                onClick={() => setShowSolutions(!showSolutions)}
+                onClick={openChat}
                 className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all border-2"
                 style={{
-                  background: showSolutions ? "#FEF2F2" : "#EF4444",
-                  color: showSolutions ? "#DC2626" : "white",
-                  borderColor: showSolutions ? "#FECACA" : "#EF4444",
+                  background: showChat ? "#FEF2F2" : "#EF4444",
+                  color: showChat ? "#DC2626" : "white",
+                  borderColor: showChat ? "#FECACA" : "#EF4444",
                 }}
               >
+                {/* Icône IA */}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  {showSolutions
+                  {showChat
                     ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-                    : <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>
+                    : <><path d="M12 2a10 10 0 0110 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></>
                   }
                 </svg>
-                {showSolutions ? "Masquer les solutions" : "Comment obtenir mon crédit ?"}
+                {showChat ? "Fermer le conseiller IA" : "Comment obtenir mon crédit ?"}
               </button>
             )}
 
@@ -349,62 +353,127 @@ export default function Simulator() {
           </div>
         </div>
 
-        {/* ── PANNEAU SOLUTIONS (pleine largeur, s'ouvre sous le simulateur) ── */}
-        {result.isProblematic && showSolutions && (
-          <div className="mt-8 rounded-2xl border-2 border-red-100 bg-white overflow-hidden shadow-lg">
-            {/* Header du panneau */}
-            <div className="p-6 border-b border-red-50" style={{ background: "linear-gradient(to right, #FEF2F2, #FFF7ED)" }}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center flex-shrink-0">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                    <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    {result.solutions.length} solution{result.solutions.length > 1 ? "s" : ""} pour débloquer votre crédit
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Basé sur votre situation actuelle — {formatEur(revenu)}/mois de revenus, {formatEur(autresCredits)}/mois de crédits, {duree} ans de durée.
-                  </p>
-                </div>
+        {/* ── PANNEAU CHAT IA (pleine largeur, s'ouvre sous le simulateur) ── */}
+        {result.isProblematic && showChat && (
+          <div className="mt-8 rounded-2xl border-2 border-bpce-100 bg-white overflow-hidden shadow-xl">
+            {/* Header */}
+            <div className="p-5 border-b border-bpce-50 flex items-center gap-3"
+              style={{ background: "linear-gradient(to right, #f5f0fb, #fdf4ff)" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, #6B2D8B, #4A1870)" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                  <path d="M12 2a10 10 0 0110 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/>
+                  <path d="M8 12h.01M12 12h.01M16 12h.01"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Conseiller IA Loan Coach</p>
+                <p className="text-xs text-gray-500">Propulsé par Grok · Basé sur votre situation réelle</p>
+              </div>
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="text-xs text-emerald-600 font-medium">En ligne</span>
               </div>
             </div>
 
-            {/* Solutions */}
-            <div className="p-6 grid sm:grid-cols-2 gap-4">
-              {result.solutions.map((sol, i) => (
-                <div key={i} className={`rounded-xl border-2 p-5 ${sol.color}`}>
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-9 h-9 rounded-xl ${sol.iconBg} flex items-center justify-center text-lg flex-shrink-0`}>
-                      {sol.icon}
+            {/* Messages */}
+            <div className="p-5 flex flex-col gap-4 max-h-96 overflow-y-auto bg-gray-50/50">
+              {messages.length === 0 && isLoading && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, #6B2D8B, #4A1870)" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                      <path d="M12 2a10 10 0 0110 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/>
+                      <path d="M8 12h.01M12 12h.01M16 12h.01"/>
+                    </svg>
+                  </div>
+                  <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-gray-100 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-bpce-400 animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                    <span className="w-2 h-2 rounded-full bg-bpce-400 animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                    <span className="w-2 h-2 rounded-full bg-bpce-400 animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                  </div>
+                </div>
+              )}
+
+              {messages.map((msg, i) => (
+                <div key={i} className={`flex items-start gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+                  {msg.role === "assistant" ? (
+                    <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
+                      style={{ background: "linear-gradient(135deg, #6B2D8B, #4A1870)" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                        <path d="M12 2a10 10 0 0110 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/>
+                        <path d="M8 12h.01M12 12h.01M16 12h.01"/>
+                      </svg>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h4 className="text-sm font-bold text-gray-900">{sol.title}</h4>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sol.badgeColor}`}>
-                          {sol.impact}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-600 leading-relaxed">{sol.detail}</p>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full flex-shrink-0 bg-gray-300 flex items-center justify-center">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                      </svg>
                     </div>
+                  )}
+                  <div
+                    className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                      msg.role === "assistant"
+                        ? "bg-white border border-gray-100 text-gray-800 rounded-tl-sm"
+                        : "text-white rounded-tr-sm"
+                    }`}
+                    style={msg.role === "user" ? { background: "linear-gradient(135deg, #6B2D8B, #4A1870)" } : {}}
+                  >
+                    {msg.content}
                   </div>
                 </div>
               ))}
+
+              {/* Typing indicator quand l'IA répond à un message de suivi */}
+              {isLoading && messages.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, #6B2D8B, #4A1870)" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                      <path d="M12 2a10 10 0 0110 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/>
+                      <path d="M8 12h.01M12 12h.01M16 12h.01"/>
+                    </svg>
+                  </div>
+                  <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-gray-100 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-bpce-400 animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                    <span className="w-2 h-2 rounded-full bg-bpce-400 animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                    <span className="w-2 h-2 rounded-full bg-bpce-400 animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
 
-            {/* Footer */}
-            <div className="px-6 pb-6">
-              <a
-                href="#cta"
-                className="w-full py-3.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 transition-all"
-                style={{ background: "linear-gradient(to right, #6B2D8B, #4A1870)" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-                Obtenir mon plan personnalisé complet
-              </a>
+            {/* Input */}
+            <div className="p-4 border-t border-gray-100 bg-white">
+              <div className="flex gap-3">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputMessage}
+                  onChange={e => setInputMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Posez votre question sur votre dossier..."
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-50 bg-gray-50"
+                  style={{ "--tw-ring-color": "#6B2D8B" } as React.CSSProperties}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={isLoading || !inputMessage.trim()}
+                  className="px-4 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40 flex items-center gap-2 flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg, #6B2D8B, #4A1870)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                  <span className="hidden sm:inline">Envoyer</span>
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2 text-center">
+                L'IA analyse votre profil en temps réel · Résultats indicatifs
+              </p>
             </div>
           </div>
         )}
