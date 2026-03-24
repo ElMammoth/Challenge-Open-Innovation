@@ -6,7 +6,7 @@ import HowItWorks from "@/components/HowItWorks";
 import Features from "@/components/Features";
 import HCSFExplainer from "@/components/HCSFExplainer";
 import Simulator from "@/components/Simulator";
-import Pricing from "@/components/Pricing";
+
 import FAQ from "@/components/FAQ";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
@@ -23,7 +23,6 @@ export default function Home() {
         <Features />
         <HCSFExplainer />
         <Simulator />
-        <Pricing />
         <FAQ />
         <CTA />
       </main>

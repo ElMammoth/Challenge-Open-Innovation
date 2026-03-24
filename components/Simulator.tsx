@@ -12,6 +12,9 @@ export default function Simulator() {
   const [duree, setDuree] = useState(20);
   const [tauxInteret, setTauxInteret] = useState(3.5);
   const [showSolutions, setShowSolutions] = useState(false);
+  const [aiAnalyse, setAiAnalyse] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const result = useMemo(() => {
     const tauxMensuel = tauxInteret / 100 / 12;
@@ -32,89 +35,7 @@ export default function Simulator() {
     const score = Math.round(Math.min(100, scoreRaw));
     const isProblematic = tauxEndettementActuel > 35 || score < 45;
 
-    // Solutions personnalisées
-    const creditExcess = Math.max(0, autresCredits - revenu * 0.35);
-    const creditToReduce = Math.ceil(creditExcess / 50) * 50;
-    const revenuNeeded = autresCredits > 0 ? Math.ceil(autresCredits / 0.35 / 100) * 100 : 0;
-    const revenuGap = Math.max(0, revenuNeeded - revenu);
-    const dureeMax25 = duree > 25;
-    const apportIdeal = Math.round(capaciteEmprunt * 0.1 / 1000) * 1000;
-
-    const solutions = [];
-
-    if (autresCredits > revenu * 0.35) {
-      solutions.push({
-        icon: "💳",
-        priority: "haute",
-        title: "Soldez ou rachetez vos crédits en cours",
-        detail: `Vous devez réduire vos mensualités de crédits de ${formatEur(creditToReduce)}/mois pour repasser sous le seuil de 35%. Clôturer un crédit renouvelable ou racheter un crédit auto peut suffire.`,
-        impact: "Impact immédiat",
-        color: "border-red-200 bg-red-50",
-        iconBg: "bg-red-100",
-        badgeColor: "bg-red-100 text-red-700",
-      });
-    }
-
-    if (revenuGap > 0) {
-      solutions.push({
-        icon: "💰",
-        priority: "haute",
-        title: "Augmentez vos revenus déclarés",
-        detail: `Avec vos crédits actuels (${formatEur(autresCredits)}/mois), il vous faudrait ${formatEur(revenuNeeded)}/mois de revenus nets pour être sous les 35% HCSF. Un co-emprunteur ou des revenus locatifs peuvent être intégrés au dossier.`,
-        impact: `+${formatEur(revenuGap)}/mois nécessaires`,
-        color: "border-orange-200 bg-orange-50",
-        iconBg: "bg-orange-100",
-        badgeColor: "bg-orange-100 text-orange-700",
-      });
-    }
-
-    if (duree < 25 && duree > 0) {
-      const tauxMensuelCalc = tauxInteret / 100 / 12;
-      const nbMois25 = 25 * 12;
-      const maxMens25 = revenu * 0.35 - autresCredits;
-      const capacite25 = maxMens25 > 0
-        ? (maxMens25 * (1 - Math.pow(1 + tauxMensuelCalc, -nbMois25))) / tauxMensuelCalc
-        : 0;
-      const gainCapacite = Math.round((capacite25 - capaciteEmprunt) / 1000) * 1000;
-      if (gainCapacite > 5000) {
-        solutions.push({
-          icon: "📅",
-          priority: "moyenne",
-          title: `Allongez la durée à 25 ans`,
-          detail: `En passant de ${duree} à 25 ans, vous augmentez votre capacité d'emprunt de ${formatEur(gainCapacite)} supplémentaires, sans toucher à vos revenus ni à vos crédits. C'est la solution la plus simple et la plus rapide.`,
-          impact: `+${formatEur(gainCapacite)} de capacité`,
-          color: "border-bpce-200 bg-bpce-50",
-          iconBg: "bg-bpce-100",
-          badgeColor: "bg-bpce-100 text-bpce-700",
-        });
-      }
-    }
-
-    if (apport < apportIdeal && apportIdeal > 0) {
-      solutions.push({
-        icon: "🏦",
-        priority: "moyenne",
-        title: "Augmentez votre apport personnel",
-        detail: `Un apport de ${formatEur(apportIdeal)} (10% du projet) rassure fortement la banque et peut débloquer une dérogation aux normes HCSF. Épargne personnelle, donation familiale ou déblocage de participation sont des sources valides.`,
-        impact: "Améliore fortement le dossier",
-        color: "border-emerald-200 bg-emerald-50",
-        iconBg: "bg-emerald-100",
-        badgeColor: "bg-emerald-100 text-emerald-700",
-      });
-    }
-
-    solutions.push({
-      icon: "🤝",
-      priority: "conseil",
-      title: "Ajoutez un co-emprunteur",
-      detail: "Emprunter à deux permet de cumuler les revenus, ce qui peut faire baisser mécaniquement votre taux d'endettement. C'est l'une des solutions les plus efficaces pour les primo-accédants dont le revenu individuel est insuffisant.",
-      impact: "Très efficace",
-      color: "border-gray-200 bg-gray-50",
-      iconBg: "bg-gray-100",
-      badgeColor: "bg-gray-100 text-gray-600",
-    });
-
-    return { maxMensualite, capaciteEmprunt, budgetTotal, tauxEndettementActuel, hcsfOk, score, margePct, isProblematic, solutions };
+    return { maxMensualite, capaciteEmprunt, budgetTotal, tauxEndettementActuel, hcsfOk, score, margePct, isProblematic };
   }, [revenu, autresCredits, apport, duree, tauxInteret]);
 
   const getScoreColor = (s: number) =>
@@ -134,6 +55,91 @@ export default function Simulator() {
 
   const endettementStatus = getEndettementStatus();
   const totalTaux = autresCredits > 0 ? result.tauxEndettementActuel : 0;
+
+  async function handleAnalyse() {
+    if (showSolutions && aiAnalyse) {
+      setShowSolutions(false);
+      return;
+    }
+    setShowSolutions(true);
+    setAiLoading(true);
+    setAiError("");
+    setAiAnalyse("");
+
+    try {
+      const res = await fetch("/api/analyse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          revenu,
+          autresCredits,
+          apport,
+          duree,
+          tauxInteret,
+          capaciteEmprunt: Math.round(result.capaciteEmprunt),
+          budgetTotal: Math.round(result.budgetTotal),
+          tauxEndettement: result.tauxEndettementActuel.toFixed(1),
+          score: result.score,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        setAiError(data.error);
+      } else {
+        setAiAnalyse(data.analyse);
+      }
+    } catch {
+      setAiError("Impossible de contacter le service d'analyse. Réessayez dans un instant.");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function renderMarkdown(text: string) {
+    return text.split("\n").map((line, i) => {
+      if (line.startsWith("### ")) {
+        return <h4 key={i} className="text-base font-bold text-gray-900 mt-5 mb-2">{line.replace("### ", "")}</h4>;
+      }
+      if (line.startsWith("## ")) {
+        return <h3 key={i} className="text-lg font-bold text-gray-900 mt-6 mb-2">{line.replace("## ", "")}</h3>;
+      }
+      if (line.startsWith("# ")) {
+        return <h2 key={i} className="text-xl font-extrabold text-gray-900 mt-6 mb-3">{line.replace("# ", "")}</h2>;
+      }
+      if (line.startsWith("- **") || line.startsWith("* **")) {
+        const content = line.replace(/^[-*]\s*/, "");
+        return (
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
+            <span className="text-bpce-600 mt-0.5">&#8226;</span>
+            <span dangerouslySetInnerHTML={{ __html: content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
+          </li>
+        );
+      }
+      if (line.startsWith("- ") || line.startsWith("* ")) {
+        return (
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
+            <span className="text-bpce-600 mt-0.5">&#8226;</span>
+            <span>{line.replace(/^[-*]\s*/, "")}</span>
+          </li>
+        );
+      }
+      if (line.match(/^\d+\.\s/)) {
+        return (
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
+            <span className="text-bpce-600 font-bold mt-0.5">{line.match(/^(\d+)\./)?.[1]}.</span>
+            <span dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\.\s*/, "").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
+          </li>
+        );
+      }
+      if (line.trim() === "") return <div key={i} className="h-2" />;
+      return (
+        <p key={i} className="text-sm text-gray-700 leading-relaxed mb-1"
+          dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, "<strong class='text-gray-900'>$1</strong>") }}
+        />
+      );
+    });
+  }
 
   return (
     <section id="simulateur" className="py-24 bg-white">
@@ -165,7 +171,7 @@ export default function Simulator() {
                 <input type="range" min={1000} max={15000} step={100} value={revenu}
                   onChange={e => setRevenu(+e.target.value)} className="w-full" />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span>1 000 €</span><span>15 000 €</span>
+                  <span>1 000 EUR</span><span>15 000 EUR</span>
                 </div>
               </div>
 
@@ -180,7 +186,7 @@ export default function Simulator() {
                 <input type="range" min={0} max={2000} step={50} value={autresCredits}
                   onChange={e => setAutresCredits(+e.target.value)} className="w-full" />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span>0 €</span><span>2 000 €</span>
+                  <span>0 EUR</span><span>2 000 EUR</span>
                 </div>
               </div>
 
@@ -192,7 +198,7 @@ export default function Simulator() {
                 <input type="range" min={0} max={200000} step={1000} value={apport}
                   onChange={e => setApport(+e.target.value)} className="w-full" />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span>0 €</span><span>200 000 €</span>
+                  <span>0 EUR</span><span>200 000 EUR</span>
                 </div>
               </div>
 
@@ -261,7 +267,7 @@ export default function Simulator() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Mensualité maximum HCSF</p>
               <p className="text-2xl font-bold text-gray-900">
-                {result.maxMensualite > 0 ? formatEur(result.maxMensualite) : "0 €"}
+                {result.maxMensualite > 0 ? formatEur(result.maxMensualite) : "0 EUR"}
                 <span className="text-sm font-normal text-gray-400 ml-1">/ mois</span>
               </p>
               {result.maxMensualite <= 0 && (
@@ -316,24 +322,41 @@ export default function Simulator() {
               )}
             </div>
 
-            {/* ── BOUTON SOLUTIONS (visible quand dossier problématique) ── */}
+            {/* BOUTON ANALYSE IA */}
             {result.isProblematic && (
               <button
-                onClick={() => setShowSolutions(!showSolutions)}
+                onClick={handleAnalyse}
+                disabled={aiLoading}
                 className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all border-2"
                 style={{
                   background: showSolutions ? "#FEF2F2" : "#EF4444",
                   color: showSolutions ? "#DC2626" : "white",
                   borderColor: showSolutions ? "#FECACA" : "#EF4444",
+                  opacity: aiLoading ? 0.7 : 1,
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  {showSolutions
-                    ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-                    : <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>
-                  }
-                </svg>
-                {showSolutions ? "Masquer les solutions" : "Comment obtenir mon crédit ?"}
+                {aiLoading ? (
+                  <>
+                    <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83"/>
+                    </svg>
+                    Analyse en cours...
+                  </>
+                ) : showSolutions ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    Masquer l'analyse
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    Analyser mon dossier avec l'IA
+                  </>
+                )}
               </button>
             )}
 
@@ -349,63 +372,69 @@ export default function Simulator() {
           </div>
         </div>
 
-        {/* ── PANNEAU SOLUTIONS (pleine largeur, s'ouvre sous le simulateur) ── */}
+        {/* PANNEAU ANALYSE IA */}
         {result.isProblematic && showSolutions && (
           <div className="mt-8 rounded-2xl border-2 border-red-100 bg-white overflow-hidden shadow-lg">
-            {/* Header du panneau */}
+            {/* Header */}
             <div className="p-6 border-b border-red-50" style={{ background: "linear-gradient(to right, #FEF2F2, #FFF7ED)" }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center flex-shrink-0">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
                     <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
                   </svg>
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">
-                    {result.solutions.length} solution{result.solutions.length > 1 ? "s" : ""} pour débloquer votre crédit
+                    Analyse personnalisée par IA
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Basé sur votre situation actuelle — {formatEur(revenu)}/mois de revenus, {formatEur(autresCredits)}/mois de crédits, {duree} ans de durée.
+                    Basée sur votre profil : {formatEur(revenu)}/mois, {formatEur(autresCredits)}/mois de crédits, {duree} ans, score {result.score}/100
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Solutions */}
-            <div className="p-6 grid sm:grid-cols-2 gap-4">
-              {result.solutions.map((sol, i) => (
-                <div key={i} className={`rounded-xl border-2 p-5 ${sol.color}`}>
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-9 h-9 rounded-xl ${sol.iconBg} flex items-center justify-center text-lg flex-shrink-0`}>
-                      {sol.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h4 className="text-sm font-bold text-gray-900">{sol.title}</h4>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sol.badgeColor}`}>
-                          {sol.impact}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-600 leading-relaxed">{sol.detail}</p>
-                    </div>
-                  </div>
+            {/* Contenu */}
+            <div className="p-6">
+              {aiLoading && (
+                <div className="flex flex-col items-center justify-center py-12 gap-4">
+                  <div className="w-12 h-12 rounded-full border-4 border-bpce-200 border-t-bpce-600 animate-spin" />
+                  <p className="text-sm text-gray-500 font-medium">Notre IA analyse votre situation...</p>
+                  <p className="text-xs text-gray-400">Cela prend quelques secondes</p>
                 </div>
-              ))}
+              )}
+
+              {aiError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                  <p className="text-sm text-red-600 font-medium">{aiError}</p>
+                  <button onClick={handleAnalyse} className="mt-3 text-sm text-red-500 underline hover:text-red-700">
+                    Réessayer
+                  </button>
+                </div>
+              )}
+
+              {aiAnalyse && !aiLoading && (
+                <div className="prose-sm max-w-none">
+                  {renderMarkdown(aiAnalyse)}
+                </div>
+              )}
             </div>
 
             {/* Footer */}
-            <div className="px-6 pb-6">
-              <a
-                href="#cta"
-                className="w-full py-3.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 transition-all"
-                style={{ background: "linear-gradient(to right, #6B2D8B, #4A1870)" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-                Obtenir mon plan personnalisé complet
-              </a>
-            </div>
+            {aiAnalyse && !aiLoading && (
+              <div className="px-6 pb-6">
+                <a
+                  href="#cta"
+                  className="w-full py-3.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 transition-all"
+                  style={{ background: "linear-gradient(to right, #6B2D8B, #4A1870)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  Obtenir mon plan personnalisé complet
+                </a>
+              </div>
+            )}
           </div>
         )}
 
