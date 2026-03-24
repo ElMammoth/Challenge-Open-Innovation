@@ -17,7 +17,6 @@ export default function Header() {
     { href: "#comment-ca-marche", label: "Comment ça marche" },
     { href: "#fonctionnalites", label: "Fonctionnalités" },
     { href: "#simulateur", label: "Simulateur" },
-    { href: "#tarifs", label: "Tarifs" },
     { href: "#faq", label: "FAQ" },
   ];
 
