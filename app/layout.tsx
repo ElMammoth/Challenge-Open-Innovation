@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Loan Coach — Du refus bancaire au prêt signé",
+  title: "Loan AI — Du refus bancaire au prêt signé",
   description:
-    "Loan Coach vous aide à comprendre votre refus de crédit immobilier et à devenir finançable grâce à l'IA et l'Open Banking. Passeport de Crédit certifié HCSF.",
+    "Loan AI vous aide à comprendre votre refus de crédit immobilier et à devenir finançable grâce à l'IA et l'Open Banking. Passeport de Crédit certifié HCSF.",
 };
 
 export default function RootLayout({

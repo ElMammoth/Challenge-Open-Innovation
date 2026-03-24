@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 
   const systemPrompt = `Tu es un conseiller expert en crédit immobilier, spécialisé dans les normes HCSF 2024 françaises.
-Tu travailles pour Loan Coach et aides les utilisateurs à débloquer leur dossier de prêt immobilier.
+Tu travailles pour Loan AI et aides les utilisateurs à débloquer leur dossier de prêt immobilier.
 
 Situation actuelle du simulateur de l'utilisateur :
 - Revenus nets mensuels : ${formatEur(simulatorContext.revenu)}
@@ -59,7 +59,7 @@ Situation actuelle du simulateur de l'utilisateur :
 - Apport personnel : ${formatEur(simulatorContext.apport)}
 - Durée souhaitée : ${simulatorContext.duree} ans
 - Taux d'intérêt estimé : ${simulatorContext.tauxInteret}%
-- Score Loan Coach : ${simulatorContext.score}/100
+- Score Loan AI : ${simulatorContext.score}/100
 - Taux d'endettement actuel : ${simulatorContext.tauxEndettement.toFixed(1)}% (limite HCSF : 35%)
 - Capacité d'emprunt calculée : ${formatEur(simulatorContext.capaciteEmprunt)}
 - Budget total d'achat : ${formatEur(simulatorContext.budgetTotal)}

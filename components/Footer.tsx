@@ -71,9 +71,9 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600">
-          <p>© 2024 Loan Coach. Tous droits réservés.</p>
+          <p>© 2024 Loan AI. Tous droits réservés.</p>
           <p>
-            Loan Coach n'est pas un établissement de crédit. Service d'aide à la décision uniquement.
+            Loan AI n'est pas un établissement de crédit. Service d'aide à la décision uniquement.
           </p>
         </div>
       </div>

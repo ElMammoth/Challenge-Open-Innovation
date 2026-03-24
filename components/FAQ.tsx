@@ -3,7 +3,7 @@ import { useState } from "react";
 
 const faqs = [
   {
-    q: "Qu'est-ce que le Passeport de Crédit Loan Coach ?",
+    q: "Qu'est-ce que le Passeport de Crédit Loan AI ?",
     a: "Le Passeport de Crédit est un document certifié généré après une analyse complète de votre dossier selon les normes HCSF. Il atteste que votre profil a été pré-audité et que votre taux d'endettement, votre durée de prêt et votre reste à vivre sont conformes aux exigences réglementaires. Il inclut un QR code de vérification que les banques peuvent scanner pour confirmer son authenticité. C'est un signal fort qui distingue votre dossier de ceux non préparés.",
   },
   {
@@ -15,11 +15,11 @@ const faqs = [
     a: "Un taux d'endettement supérieur à 35% signifie que votre dossier ne peut pas être accepté en standard. Cependant, les banques disposent d'une marge de flexibilité de 20% de leurs dossiers, prioritairement réservée aux primo-accédants. Notre système analyse si vous pouvez bénéficier de cette dérogation et simule les scénarios pour revenir sous le seuil : rachat de crédit, apport supplémentaire, rallongement de durée (dans la limite HCSF), ou attente d'amortissement de crédits existants.",
   },
   {
-    q: "Loan Coach peut-il garantir l'obtention de mon prêt ?",
-    a: "Non, et aucun outil ne peut le faire de façon légitime. Loan Coach est un outil d'aide à la décision qui optimise votre dossier et maximise vos chances, mais la décision finale appartient toujours à la banque. Ce que nous garantissons : une analyse rigoureuse de votre profil, une feuille de route datée basée sur les normes HCSF, et un dossier pré-audité qui élimine les refus préventifs liés à des erreurs de préparation.",
+    q: "Loan AI peut-il garantir l'obtention de mon prêt ?",
+    a: "Non, et aucun outil ne peut le faire de façon légitime. Loan AI est un outil d'aide à la décision qui optimise votre dossier et maximise vos chances, mais la décision finale appartient toujours à la banque. Ce que nous garantissons : une analyse rigoureuse de votre profil, une feuille de route datée basée sur les normes HCSF, et un dossier pré-audité qui élimine les refus préventifs liés à des erreurs de préparation.",
   },
   {
-    q: "Je suis freelance ou indépendant. Loan Coach est-il adapté à mon profil ?",
+    q: "Je suis freelance ou indépendant. Loan AI est-il adapté à mon profil ?",
     a: "Absolument. C'est même l'un des points forts de notre algorithme. Les banques appliquent souvent des coefficients pénalisants aux revenus variables. Notre système analyse la régularité et la dynamique de vos revenus sur 24 mois pour construire un argumentaire adapté. Nous valorisons les tendances croissantes, la diversification des clients et la stabilité sectorielle pour présenter votre profil sous le meilleur angle possible.",
   },
   {
@@ -31,8 +31,8 @@ const faqs = [
     a: "Non. Vos données financières ne sont jamais partagées avec des tiers sans votre consentement explicite. Le Passeport de Crédit que vous générez est un document que vous choisissez de présenter ou non à votre banque. Nous ne vendons pas de données et ne sommes pas un courtier. Vous gardez le contrôle total de votre information à chaque étape.",
   },
   {
-    q: "Quelle est la différence entre Loan Coach et un courtier immobilier ?",
-    a: "Un courtier négocie les taux auprès des banques après que votre dossier est prêt. Loan Coach intervient en amont : nous préparons, optimisons et certifions votre dossier pour qu'il soit irréprochable avant même d'entrer chez un courtier ou en banque. Les deux approches sont complémentaires. Certains de nos clients Premium bénéficient d'une mise en relation directe avec des conseillers IOBSP certifiés pour combiner les deux.",
+    q: "Quelle est la différence entre Loan AI et un courtier immobilier ?",
+    a: "Un courtier négocie les taux auprès des banques après que votre dossier est prêt. Loan AI intervient en amont : nous préparons, optimisons et certifions votre dossier pour qu'il soit irréprochable avant même d'entrer chez un courtier ou en banque. Les deux approches sont complémentaires. Certains de nos clients Premium bénéficient d'une mise en relation directe avec des conseillers IOBSP certifiés pour combiner les deux.",
   },
 ];
 
@@ -93,7 +93,7 @@ export default function FAQ() {
           <p className="text-sm font-semibold text-gray-900 mb-1">Vous n'avez pas trouvé votre réponse ?</p>
           <p className="text-sm text-gray-500 mb-4">Notre équipe répond en moins de 24h.</p>
           <a
-            href="mailto:contact@loancoach.fr"
+            href="mailto:contact@loanai.fr"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-bpce-600 text-white font-semibold rounded-xl text-sm hover:bg-bpce-700 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>

@@ -58,7 +58,7 @@ export default function HCSFExplainer() {
             <div className="mt-4 flex items-start gap-2 p-3 bg-red-500/10 rounded-xl border border-red-500/20">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F87171" strokeWidth="2" className="flex-shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <p className="text-xs text-red-300">
-                Un crédit auto, crédit renouvelable ou prêt étudiant actif réduit votre capacité d'emprunt immobilier. Loan Coach les détecte automatiquement.
+                Un crédit auto, crédit renouvelable ou prêt étudiant actif réduit votre capacité d'emprunt immobilier. Loan AI les détecte automatiquement.
               </p>
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function HCSFExplainer() {
             </svg>
           </div>
           <div className="text-center md:text-left">
-            <p className="text-lg font-bold text-white mb-1">Loan Coach calcule tout cela automatiquement pour vous</p>
+            <p className="text-lg font-bold text-white mb-1">Loan AI calcule tout cela automatiquement pour vous</p>
             <p className="text-bpce-100/60 text-sm">
               Plus besoin de maîtriser chaque règle par cœur. Notre système applique les normes HCSF en temps réel
               sur votre situation et vous dit exactement où vous en êtes, et comment optimiser votre dossier.

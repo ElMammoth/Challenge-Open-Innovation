@@ -92,7 +92,7 @@ export default function Simulator() {
         const reply = await callGrok(initial);
         setMessages([{ role: "assistant", content: reply }]);
       } catch {
-        setMessages([{ role: "assistant", content: "Bonjour ! Je suis votre conseiller IA Loan Coach. Posez-moi vos questions sur votre dossier de crédit immobilier." }]);
+        setMessages([{ role: "assistant", content: "Bonjour ! Je suis votre conseiller IA Loan AI. Posez-moi vos questions sur votre dossier de crédit immobilier." }]);
       } finally {
         setIsLoading(false);
       }
@@ -239,7 +239,7 @@ export default function Simulator() {
           <div className="flex flex-col gap-4">
             {/* Score */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Score Loan Coach</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Score Loan AI</p>
               <div className="flex items-end gap-3 mb-3">
                 <span className={`text-5xl font-extrabold ${getScoreColor(result.score)}`}>{result.score}</span>
                 <span className="text-gray-400 text-sm mb-2">/ 100</span>
@@ -371,7 +371,7 @@ export default function Simulator() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">Conseiller IA Loan Coach</p>
+                <p className="text-sm font-bold text-gray-900">Conseiller IA Loan AI</p>
                 <p className="text-xs text-gray-500">Propulsé par Loan AI · Basé sur votre situation réelle</p>
               </div>
               <div className="ml-auto flex items-center gap-1.5">
@@ -483,7 +483,7 @@ export default function Simulator() {
 
         <p className="text-center text-xs text-gray-400 mt-8">
           Simulation indicative basée sur les normes HCSF 2024. Les résultats réels peuvent varier selon les établissements bancaires.
-          Loan Coach ne se substitue pas à un conseiller en crédit immobilier.
+          Loan AI ne se substitue pas à un conseiller en crédit immobilier.
         </p>
       </div>
     </section>

@@ -8,7 +8,7 @@ export default function Parcours() {
     anticiper: {
       badge: "Je n'ai pas encore déposé mon dossier",
       title: "Anticipez. Maximisez vos chances.",
-      subtitle: "Avant même d'entrer en banque, Loan Coach scanne votre profil financier et vous dit exactement ce qu'une banque va voir, et ce qu'il faut améliorer.",
+      subtitle: "Avant même d'entrer en banque, Loan AI scanne votre profil financier et vous dit exactement ce qu'une banque va voir, et ce qu'il faut améliorer.",
       steps: [
         {
           icon: "🔗",
@@ -37,7 +37,7 @@ export default function Parcours() {
     rebondir: {
       badge: "Mon dossier vient d'être refusé",
       title: "Comprenez. Rebondissez rapidement.",
-      subtitle: "Un refus n'est pas une condamnation. Loan Coach décode les vraies raisons de votre refus, souvent invisibles, et trace la route la plus courte vers une réponse positive.",
+      subtitle: "Un refus n'est pas une condamnation. Loan AI décode les vraies raisons de votre refus, souvent invisibles, et trace la route la plus courte vers une réponse positive.",
       steps: [
         {
           icon: "🔍",
@@ -76,7 +76,7 @@ export default function Parcours() {
             Deux parcours, une seule solution
           </p>
           <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
-            Loan Coach s'adapte à votre situation
+            Loan AI s'adapte à votre situation
           </h2>
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
             Que vous prépariez votre premier achat ou que vous veniez d'essuyer un refus, le parcours est pensé pour vous.

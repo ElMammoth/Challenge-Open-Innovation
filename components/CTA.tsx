@@ -31,7 +31,7 @@ export default function CTA() {
         </h2>
 
         <p className="text-xl text-bpce-100/70 mb-10 max-w-2xl mx-auto leading-relaxed">
-          Rejoignez la liste d'attente et soyez parmi les premiers à accéder à Loan Coach.
+          Rejoignez la liste d'attente et soyez parmi les premiers à accéder à Loan AI.
           Analyse gratuite de votre profil garantie dès l'ouverture.
         </p>
 

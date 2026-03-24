@@ -22,7 +22,7 @@ export default function Hero() {
 
             {/* Subheadline */}
             <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg animate-delay-1">
-              Loan Coach analyse votre profil financier en temps réel via l'Open Banking,
+              Loan AI analyse votre profil financier en temps réel via l'Open Banking,
               identifie vos points de blocage et vous trace une feuille de route précise
               pour devenir finançable, même après un refus.
             </p>
