@@ -75,40 +75,47 @@ RÈGLES :
 - Maximum 700 mots
 - Réponds en français`;
 
-  const apiKey = process.env.GROK_API;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return Response.json({ error: "Clé API manquante" }, { status: 500 });
+    return Response.json({ error: "Clé API Gemini manquante" }, { status: 500 });
   }
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: "Tu es un conseiller expert en crédit immobilier français. Tu vulgarises les concepts financiers pour les rendre accessibles à tous. Tu donnes des conseils concrets, chiffrés et personnalisés." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-      }),
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Tu es un conseiller expert en crédit immobilier français. Tu vulgarises les concepts financiers pour les rendre accessibles à tous. Tu donnes des conseils concrets, chiffrés et personnalisés.\n\n${prompt}`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1500,
+          },
+        }),
+      }
+    );
 
     if (!res.ok) {
       const errText = await res.text();
-      return Response.json({ error: `Erreur API: ${res.status}`, details: errText }, { status: 502 });
+      return Response.json({ error: `Erreur API Gemini: ${res.status}`, details: errText }, { status: 502 });
     }
 
     const data = await res.json();
-    const content = data.choices?.[0]?.message?.content ?? "Aucune analyse disponible.";
+    const content =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ?? "Aucune analyse disponible.";
 
     return Response.json({ analyse: content });
   } catch {
-    return Response.json({ error: "Erreur de connexion à l'API" }, { status: 500 });
+    return Response.json({ error: "Erreur de connexion à l'API Gemini" }, { status: 500 });
   }
 }
