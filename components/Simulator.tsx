@@ -368,7 +368,7 @@ export default function Simulator() {
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">Conseiller IA Loan Coach</p>
-                <p className="text-xs text-gray-500">Propulsé par Grok · Basé sur votre situation réelle</p>
+                <p className="text-xs text-gray-500">Propulsé par Groq · Basé sur votre situation réelle</p>
               </div>
               <div className="ml-auto flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>

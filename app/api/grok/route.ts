@@ -18,7 +18,7 @@ interface Message {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.XAI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "Clé API non configurée." }, { status: 500 });
   }
@@ -50,14 +50,14 @@ Règles de réponse :
 - Tu peux utiliser des emojis avec parcimonie pour rendre la réponse lisible
 - Si l'utilisateur pose une question hors sujet crédit immobilier, ramène-le poliment au sujet`;
 
-  const response = await fetch("https://api.x.ai/v1/chat/completions", {
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "grok-3-mini",
+      model: "llama-3.3-70b-versatile",
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       temperature: 0.7,
     }),
